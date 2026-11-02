@@ -1,52 +1,88 @@
 name: Release
 
-# Manual: pick "Run workflow", type the version (must match VERSION), and it
-# builds the app, zips it and publishes a GitHub release from that tag.
+# Cloud release: push a tag, GitHub builds, signs (ad-hoc), zips and publishes.
+#
+#   git tag -a v0.1.2 -m "SlideSense 0.1.2" && git push origin v0.1.2
+#
+# Can also be run by hand, which builds the version already in VERSION.
 on:
+  push:
+    tags: ["v*"]
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to release, without the leading v (e.g. 0.1.0)"
-        required: true
 
 permissions:
   contents: write
 
 jobs:
   release:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check the version matches VERSION
+      - name: Resolve the version
+        id: version
         run: |
+          set -euo pipefail
           file_version="$(cat VERSION)"
-          if [ "$file_version" != "${{ inputs.version }}" ]; then
-            echo "VERSION says $file_version but you asked for ${{ inputs.version }}" >&2
-            exit 1
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tag_version="${GITHUB_REF_NAME#v}"
+            if [ "$tag_version" != "$file_version" ]; then
+              echo "tag says $tag_version but VERSION says $file_version" >&2
+              exit 1
+            fi
           fi
+          echo "version=$file_version" >> "$GITHUB_OUTPUT"
 
-      - name: Build the app bundle
-        run: make app
+      - name: Build, sign and zip
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          make app
+          codesign --verify --deep --strict --verbose=2 SlideSense.app
+          zip -qry -X "SlideSense-${version}.zip" SlideSense.app
+          shasum -a 256 "SlideSense-${version}.zip" | tee checksums.txt
 
-      - name: Zip it
-        run: ditto -c -k --sequesterRsrc --keepParent SlideSense.app "SlideSense-${{ inputs.version }}.zip"
+      - name: Compose release notes
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          {
+            echo "![SlideSense](https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/docs/social-preview.png)"
+            echo
+            echo "## Install"
+            echo
+            echo "1. Download \`SlideSense-${version}.zip\` and unzip it."
+            echo "2. Drag **SlideSense.app** into \`/Applications\`."
+            echo "3. The build is ad-hoc signed but not notarised, so the first launch shows"
+            echo "   *\"Apple could not verify SlideSense is free of malware\"* → **Open**"
+            echo "   (or System Settings → Privacy & Security → **Open Anyway**)."
+            echo
+            echo "Requires macOS 13 or later and a built-in Force Touch trackpad."
+            echo
+            awk -v ver="$version" '
+              $0 ~ "^## \\[" ver "\\]" { flag = 1; next }
+              flag && /^## \[/ { exit }
+              flag { print }
+            ' CHANGELOG.md
+            echo
+            echo "**Full changelog:** [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/CHANGELOG.md)"
+            echo
+            echo "**SHA-256:** \`$(cut -d' ' -f1 checksums.txt)\`"
+          } > notes.md
+          cat notes.md
 
       - name: Publish
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: "v${{ inputs.version }}"
-          name: "SlideSense ${{ inputs.version }}"
-          files: "SlideSense-${{ inputs.version }}.zip"
-          generate_release_notes: true
-          body: |
-            Download `SlideSense-${{ inputs.version }}.zip`, unzip it, and drag
-            **SlideSense.app** into `/Applications`.
-
-            The build is ad-hoc signed and not notarised, so the first launch
-            needs right-click -> **Open** (or:
-
-            ```sh
-            xattr -dr com.apple.quarantine /Applications/SlideSense.app
-            ```
-            )
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          version: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          tag="v${version}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --notes-file notes.md
+            gh release upload "$tag" "SlideSense-${version}.zip" --clobber
+          else
+            gh release create "$tag" "SlideSense-${version}.zip" \
+              --title "SlideSense ${version}" \
+              --notes-file notes.md
+          fi

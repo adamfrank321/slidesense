@@ -64,13 +64,14 @@ Magic Mouse support is not implemented yet — see [Roadmap](#roadmap).
 
 1. Download `SlideSense-0.1.0.zip` from [Releases](https://github.com/shashvat1965/slidesense/releases).
 2. Unzip it and drag **SlideSense.app** into `/Applications`.
-3. The build is unsigned, so the first launch needs right-click → **Open**, or:
+3. The build is ad-hoc signed but not notarised, so the first launch shows
+   *"Apple could not verify SlideSense is free of malware"* → click **Open**
+   (or **System Settings → Privacy & Security → Open Anyway**). It never asks
+   again. Building it yourself with `make run` avoids this entirely.
 
-   ```sh
-   xattr -dr com.apple.quarantine /Applications/SlideSense.app
-   ```
-
-   Building it yourself with `make run` avoids this entirely.
+   If macOS instead says *"SlideSense is damaged"*, the download picked up a
+   stale signature — run `xattr -dr com.apple.quarantine /Applications/SlideSense.app`
+   and open it again.
 
 Or build it yourself — it takes about ten seconds:
 
@@ -84,9 +85,11 @@ make install    # copies it to /Applications
 make test       # runs the unit and UI-layout tests
 ```
 
-The bundle is assembled but not code-signed, so it runs locally without a
-Developer ID. Because every rebuild replaces the binary, macOS may ask for
-Accessibility permission again — that is expected.
+`make app` ad-hoc signs the bundle (`codesign --sign -`): a real signature with
+no identity behind it, so it validates locally and Gatekeeper can offer
+*Open Anyway* instead of calling the app damaged. Because the signature changes
+on every rebuild, macOS may ask for Accessibility permission again — that is
+expected.
 
 On first launch macOS shows an Accessibility prompt. Approve it in
 **System Settings → Privacy & Security → Accessibility**. Without it the edge

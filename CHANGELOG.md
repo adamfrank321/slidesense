@@ -4,6 +4,18 @@ All notable changes to SlideSense are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] — 2026-11-03
+
+### Fixed
+- The download was called *"damaged"* by Gatekeeper. Without a bundle signature
+  the main executable only carries the linker's ad-hoc signature, which fails
+  bundle verification ("code has no resources but signature indicates they must
+  be present"), and macOS offers no way past it.
+- The build script ad-hoc signs the bundle again (`codesign --sign -`), so the
+  app is a valid — if unidentified — signature: Gatekeeper now shows the normal
+  "Apple could not verify" prompt with an **Open** / *Open Anyway* path.
+- Still no certificate, no Apple Developer account, no notarisation, no network.
+
 ## [0.1.1] — 2026-11-02
 
 ### Changed
@@ -45,6 +57,7 @@ The first public release.
   with a key-event fallback, media commands are posted as system key events.
 - Builds are unsigned; downloaded copies need one right-click → Open.
 
-[Unreleased]: https://github.com/shashvat1965/slidesense/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/shashvat1965/slidesense/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/shashvat1965/slidesense/releases/tag/v0.1.2
 [0.1.1]: https://github.com/shashvat1965/slidesense/releases/tag/v0.1.1
 [0.1.0]: https://github.com/shashvat1965/slidesense/releases/tag/v0.1.0
