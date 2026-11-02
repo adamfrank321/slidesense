@@ -91,10 +91,14 @@ public final class UpdateController {
         SlideSenseVersion.marketing
     }
 
+    /// Overrides the bundle that gets replaced. Only used by tests, which
+    /// install into a temporary copy instead of the running app.
+    public var installTargetURL: URL?
+
     // MARK: - Checking
 
     /// Returns the newest release if it is newer than the running app.
-    public func checkForUpdate() async throws -> UpdateRelease? {
+    public func checkForUpdate(comparingTo versionOverride: String? = nil) async throws -> UpdateRelease? {
         guard let url = URL(string: "https://api.github.com/repos/\(repository)/releases/latest") else {
             throw UpdateError.malformedRelease
         }
@@ -111,7 +115,8 @@ public final class UpdateController {
         else { throw UpdateError.malformedRelease }
 
         let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
-        guard UpdateVersion.isNewer(version, than: currentVersion) else { return nil }
+        let running = versionOverride ?? currentVersion
+        guard UpdateVersion.isNewer(version, than: running) else { return nil }
 
         let assets = json["assets"] as? [[String: Any]] ?? []
         guard
@@ -179,7 +184,7 @@ public final class UpdateController {
 
     /// Swaps the new bundle in after this process exits, then relaunches it.
     public func install(_ newApp: URL) throws {
-        let target = Bundle.main.bundleURL
+        let target = installTargetURL ?? Bundle.main.bundleURL
         let parent = target.deletingLastPathComponent()
         guard FileManager.default.isWritableFile(atPath: parent.path) else {
             throw UpdateError.notWritable(parent.path)
