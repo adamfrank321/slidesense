@@ -38,7 +38,7 @@ Examples of unacceptable behaviour:
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behaviour may be
-reported to the maintainer at **shashvat@clueso.io**. All complaints will be
+reported to the maintainer at **68941739+shashvat1965@users.noreply.github.com**. All complaints will be
 reviewed and investigated promptly and fairly. The maintainer is obligated to
 respect the privacy and security of the reporter of any incident.
 

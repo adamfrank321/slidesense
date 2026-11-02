@@ -7,7 +7,7 @@ is supported.
 
 ## Reporting a vulnerability
 
-Please email **shashvat@clueso.io** with:
+Please email **68941739+shashvat1965@users.noreply.github.com** with:
 
 - the SlideSense version (`swift run SlideSense --diagnose` prints it),
 - your macOS version and Mac model,
