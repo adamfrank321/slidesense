@@ -34,6 +34,7 @@ public enum SettingsTab: String, CaseIterable, Hashable, Identifiable {
     case edges
     case feel
     case extras
+    case startup
     case general
 
     public var id: String { rawValue }
@@ -42,7 +43,8 @@ public enum SettingsTab: String, CaseIterable, Hashable, Identifiable {
         switch self {
         case .edges: return "Edges"
         case .feel: return "Feel"
-        case .extras: return "Extras"
+        case .extras: return "Media"
+        case .startup: return "Startup"
         case .general: return "General"
         }
     }
@@ -69,6 +71,10 @@ struct SettingsView: View {
                 .tabItem { Text(SettingsTab.extras.title) }
                 .tag(SettingsTab.extras)
 
+            SettingsTabContent(tab: .startup, store: store, permissionState: permissionState)
+                .tabItem { Text(SettingsTab.startup.title) }
+                .tag(SettingsTab.startup)
+
             SettingsTabContent(tab: .general, store: store, permissionState: permissionState)
                 .tabItem { Text(SettingsTab.general.title) }
                 .tag(SettingsTab.general)
@@ -92,6 +98,7 @@ struct SettingsTabContent: View {
             case .edges: edgesForm
             case .feel: feelForm
             case .extras: extrasForm
+            case .startup: startupForm
             case .general: generalForm
             }
         }
@@ -233,6 +240,51 @@ struct SettingsTabContent: View {
         .formStyle(.grouped)
     }
 
+    // MARK: - Startup
+
+    private var startupForm: some View {
+        Form {
+            Section {
+                Toggle("Open at Login", isOn: $store.settings.openAtLogin)
+                    .toggleStyle(.switch)
+                    .disabled(!LoginItem.isSupported)
+            } header: {
+                Text("Startup")
+            } footer: {
+                if LoginItem.isSupported {
+                    Text("Launches SlideSense when you log in.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Available when SlideSense runs from an app bundle.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section {
+                Toggle("Check for Updates Automatically", isOn: $store.settings.automaticallyChecksForUpdates)
+                    .toggleStyle(.switch)
+                LabeledContent("Version") {
+                    Text(Self.appVersion)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+                Button("Check Now…") {
+                    NotificationCenter.default.post(name: .slideSenseCheckForUpdates, object: nil)
+                }
+            } header: {
+                Text("Updates")
+            } footer: {
+                Text("Updates come from GitHub releases and are verified against the published SHA-256 before they are installed.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+        }
+        .formStyle(.grouped)
+    }
+
     // MARK: - General
 
     private var generalForm: some View {
@@ -281,24 +333,6 @@ struct SettingsTabContent: View {
                 Text("The HUD appears while you slide an edge.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-            }
-
-            Section {
-                Toggle("Open at Login", isOn: $store.settings.openAtLogin)
-                    .toggleStyle(.switch)
-                    .disabled(!LoginItem.isSupported)
-            } header: {
-                Text("Startup")
-            } footer: {
-                if LoginItem.isSupported {
-                    Text("Launches SlideSense when you log in.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Available when SlideSense runs from an app bundle.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
             }
 
             Section {

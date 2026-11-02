@@ -4,6 +4,26 @@ All notable changes to SlideSense are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] — 2026-11-03
+
+### Added
+- **Automatic updates.** SlideSense checks GitHub releases once a day (and on
+  demand from Settings → Startup → *Check Now…*), downloads the archive,
+  verifies it against the SHA-256 GitHub publishes, swaps the bundle in and
+  relaunches. No Sparkle: it refuses to update a bundle whose signature has no
+  team identifier, which an ad-hoc build never has.
+- Settings → Startup tab: open at login, automatic update checks, version and a
+  manual check.
+- Settings → Media tab (was "Extras"), so the media controls are easier to find.
+
+### Changed
+- Accessibility is only requested while the media strip is enabled — volume and
+  brightness never need it.
+
+### Privacy
+- The daily update check is the app's only network request: a GET to the public
+  GitHub releases API. Nothing about the machine or the user is sent.
+
 ## [0.1.2] — 2026-11-03
 
 ### Fixed
@@ -57,7 +77,8 @@ The first public release.
   with a key-event fallback, media commands are posted as system key events.
 - Builds are unsigned; downloaded copies need one right-click → Open.
 
-[Unreleased]: https://github.com/shashvat1965/slidesense/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/shashvat1965/slidesense/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/shashvat1965/slidesense/releases/tag/v0.1.3
 [0.1.2]: https://github.com/shashvat1965/slidesense/releases/tag/v0.1.2
 [0.1.1]: https://github.com/shashvat1965/slidesense/releases/tag/v0.1.1
 [0.1.0]: https://github.com/shashvat1965/slidesense/releases/tag/v0.1.0

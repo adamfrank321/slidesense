@@ -30,6 +30,37 @@ if CommandLine.arguments.contains("--demo-hud") {
     demoApp.run()
 }
 
+// Development aids for the update path.
+if CommandLine.arguments.contains("--update-check") || CommandLine.arguments.contains("--update-install") {
+    let install = CommandLine.arguments.contains("--update-install")
+    let done = DispatchSemaphore(value: 0)
+
+    Task {
+        do {
+            guard let release = try await UpdateController.shared.checkForUpdate() else {
+                print("up to date (version \(UpdateController.shared.currentVersion))")
+                done.signal()
+                return
+            }
+            print("available: \(release.version) -> \(release.downloadURL.absoluteString)")
+            if install {
+                let app = try await UpdateController.shared.download(release)
+                try UpdateController.shared.install(app)
+                print("installed: \(app.lastPathComponent) — quitting to finish the swap")
+            }
+        } catch {
+            print("failed: \(error.localizedDescription)")
+        }
+        done.signal()
+    }
+
+    done.wait()
+    if install {
+        exit(0)
+    }
+    exit(0)
+}
+
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate

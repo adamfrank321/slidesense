@@ -92,9 +92,23 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
             }
         )
 
-        if !AccessibilityPermission.isTrusted {
-            AccessibilityPermission.requestIfNeeded()
+        observers.append(
+            NotificationCenter.default.addObserver(
+                forName: .slideSenseCheckForUpdates,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.checkForUpdates(userInitiated: true)
+            }
+        )
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+            self?.checkForUpdates(userInitiated: false)
         }
+
+        // Media keys are the only thing that needs Accessibility, so a user who
+        // turns the media strip off is never asked for it.
+        promptForAccessibilityIfNeeded()
 
         if !store.settings.hasCompletedSetup {
             settingsWindow.show()
@@ -197,6 +211,10 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
             engine.reset()
         }
 
+        if settings.mediaStripEnabled {
+            promptForAccessibilityIfNeeded()
+        }
+
         if lastLoginItemPreference != settings.openAtLogin {
             lastLoginItemPreference = settings.openAtLogin
             LoginItem.sync(settings.openAtLogin)
@@ -206,6 +224,15 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
     }
 
     /// CoreAudio or DisplayServices reported a change (including our own).
+    private var didPromptForAccessibility = false
+
+    private func promptForAccessibilityIfNeeded() {
+        guard store.settings.mediaStripEnabled, !AccessibilityPermission.isTrusted else { return }
+        guard !didPromptForAccessibility else { return }
+        didPromptForAccessibility = true
+        AccessibilityPermission.requestIfNeeded()
+    }
+
     private func levelsDidChange() {
         refreshSnapshot()
         statusItem?.refresh()
@@ -217,6 +244,99 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
         brightness.refresh()
         refreshSnapshot()
         statusItem?.refresh()
+    }
+
+    // MARK: - Updates
+
+    /// Checks GitHub releases. `userInitiated` checks report "up to date" and
+    /// errors; automatic ones stay quiet unless there is something to offer.
+    public func checkForUpdates(userInitiated: Bool) {
+        guard !updateCheckInFlight else { return }
+        guard userInitiated || store.settings.automaticallyChecksForUpdates else { return }
+
+        if !userInitiated {
+            let last = UserDefaults.standard.object(forKey: Self.lastUpdateCheckKey) as? Date ?? .distantPast
+            guard Date().timeIntervalSince(last) > 24 * 3600 else { return }
+        }
+
+        updateCheckInFlight = true
+        Task { @MainActor in
+            defer { updateCheckInFlight = false }
+            do {
+                let release = try await UpdateController.shared.checkForUpdate()
+                UserDefaults.standard.set(Date(), forKey: Self.lastUpdateCheckKey)
+
+                guard let release else {
+                    if userInitiated { presentUpToDateAlert() }
+                    return
+                }
+                presentUpdateAlert(for: release)
+            } catch {
+                if userInitiated {
+                    presentUpdateFailure(error)
+                }
+            }
+        }
+    }
+
+    private static let lastUpdateCheckKey = "io.github.slidesense.lastUpdateCheck"
+    private var updateCheckInFlight = false
+
+    private func presentUpToDateAlert() {
+        let alert = NSAlert()
+        alert.messageText = "SlideSense is up to date"
+        alert.informativeText = "You are running version \(SlideSenseVersion.marketing)."
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+    }
+
+    private func presentUpdateFailure(_ error: Error) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Could not check for updates"
+        alert.informativeText = error.localizedDescription
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+    }
+
+    private func presentUpdateAlert(for release: UpdateRelease) {
+        NSApp.activate(ignoringOtherApps: true)
+
+        let alert = NSAlert()
+        alert.messageText = "SlideSense \(release.version) is available"
+        alert.informativeText = "You are running \(SlideSenseVersion.marketing)."
+        alert.addButton(withTitle: "Install Update")
+        alert.addButton(withTitle: "Release Notes")
+        alert.addButton(withTitle: "Later")
+
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            install(release)
+        case .alertSecondButtonReturn:
+            NSWorkspace.shared.open(release.pageURL)
+        default:
+            break
+        }
+    }
+
+    private func install(_ release: UpdateRelease) {
+        Task { @MainActor in
+            do {
+                let app = try await UpdateController.shared.download(release)
+                try UpdateController.shared.install(app)
+                NSApp.terminate(nil)
+            } catch {
+                let alert = NSAlert()
+                alert.alertStyle = .warning
+                alert.messageText = "The update could not be installed"
+                alert.informativeText = error.localizedDescription
+                alert.addButton(withTitle: "OK")
+                alert.addButton(withTitle: "Open Download Page")
+                if alert.runModal() == .alertSecondButtonReturn {
+                    NSWorkspace.shared.open(release.pageURL)
+                }
+            }
+        }
     }
 
     // MARK: - StatusItemDataSource
@@ -232,9 +352,23 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
     }
 
     public func requestAccessibility() {
-        if !AccessibilityPermission.isTrusted {
-            AccessibilityPermission.requestIfNeeded()
+        observers.append(
+            NotificationCenter.default.addObserver(
+                forName: .slideSenseCheckForUpdates,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.checkForUpdates(userInitiated: true)
+            }
+        )
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+            self?.checkForUpdates(userInitiated: false)
         }
+
+        // Media keys are the only thing that needs Accessibility, so a user who
+        // turns the media strip off is never asked for it.
+        promptForAccessibilityIfNeeded()
         AccessibilityPermission.openSystemSettings()
     }
 

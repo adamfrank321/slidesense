@@ -5,7 +5,7 @@ import Foundation
 public enum SlideSenseVersion {
     /// Keep in sync with the `VERSION` file at the repository root; the build
     /// script stamps the same value into `Info.plist`.
-    public static let marketingFallback = "0.1.0"
+    public static let marketingFallback = "0.1.3"
 
     public static var marketing: String {
         bundleValue(for: "CFBundleShortVersionString") ?? marketingFallback

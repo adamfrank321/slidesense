@@ -34,6 +34,7 @@ matching on-screen display, quick mute, and a media strip along the bottom edge.
 | **Swap sides** | Brightness on the right if you prefer. |
 | **Menu bar only** | No Dock icon. Idle CPU is effectively zero. |
 | **Open at login** | Via `SMAppService`, no helper daemon. |
+| **Auto-update** | Checks GitHub releases daily, verifies the SHA-256, swaps the bundle. |
 
 ## Screenshots
 
@@ -137,15 +138,17 @@ Settings, so the menu stays a glance, not a control panel.
 
 ## Settings
 
-Four tabs in a standard macOS preferences window:
+Five tabs in a standard macOS preferences window:
 
 - **Edges** — what each side controls, band width, sensitivity, bottom-quarter
   mode, required modifier, vertical-axis flip.
 - **Feel** — cursor freeze, precise sliding, ⇧⌥ fine control, haptics and
   strength.
-- **Extras** — Quick Mute, media strip, reverse swipe, tap to play/pause.
-- **General** — Accessibility permission, HUD visibility and appearance, open at
-  login, restore defaults.
+- **Media** — Quick Mute, media strip, reverse swipe, tap to play/pause. Turn
+  all four off and the app does nothing but brightness and volume.
+- **Startup** — open at login, automatic update checks, version, check now.
+- **General** — Accessibility permission, HUD visibility and appearance, restore
+  defaults.
 
 Settings are stored as JSON under `io.github.slidesense.settings.v1` in
 `UserDefaults`.
@@ -209,7 +212,7 @@ make snapshots       # writes PNGs of every UI state to ./Snapshots
 ```
 
 `make snapshots` renders the HUD in nine states (0 %, 1 %, 50 %, 100 %, muted,
-brightness, and three media symbols) and the settings window on all four tabs, in
+brightness, and three media symbols) and the settings window on all five tabs, in
 light and dark appearance, at 2× — so padding and alignment can be checked
 without a screen recording permission.
 
@@ -231,9 +234,13 @@ state) and `swift run SlideSense --diagnose` prints the state of every subsystem
 
 ## Privacy
 
-No network access, no analytics, no crash reporting, no accounts. Everything is
-local: the app reads the trackpad, writes volume/brightness, and stores its own
-settings in `UserDefaults`.
+No analytics, no crash reporting, no accounts. Everything is local: the app reads
+the trackpad, writes volume/brightness, and stores its own settings in
+`UserDefaults`.
+
+The single network request is the update check: once a day, a `GET` to
+`api.github.com/repos/shashvat1965/slidesense/releases/latest`. It sends nothing
+about you or the machine, and it can be turned off in Settings → Startup.
 
 ## Roadmap
 

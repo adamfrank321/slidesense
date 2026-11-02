@@ -116,6 +116,9 @@ public struct Settings: Codable, Equatable, Sendable {
     /// Set once the onboarding assistant has been shown.
     public var hasCompletedSetup: Bool = false
 
+    /// Poll GitHub releases once a day for a newer build.
+    public var automaticallyChecksForUpdates: Bool = true
+
     public init() {}
 
     /// Codable with forgiving decoding: missing keys fall back to the default
@@ -144,6 +147,8 @@ public struct Settings: Codable, Equatable, Sendable {
         appearance = try c.decodeIfPresent(AppearanceMode.self, forKey: .appearance) ?? d.appearance
         openAtLogin = try c.decodeIfPresent(Bool.self, forKey: .openAtLogin) ?? d.openAtLogin
         hasCompletedSetup = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedSetup) ?? d.hasCompletedSetup
+        automaticallyChecksForUpdates = try c.decodeIfPresent(Bool.self, forKey: .automaticallyChecksForUpdates)
+            ?? d.automaticallyChecksForUpdates
     }
 
     /// The action configured for a given edge.
@@ -202,4 +207,6 @@ public final class SettingsStore: ObservableObject {
 
 public extension Notification.Name {
     static let slideSenseSettingsDidChange = Notification.Name("io.github.slidesense.settingsDidChange")
+    /// Posted by the settings window when the user asks for an update check.
+    static let slideSenseCheckForUpdates = Notification.Name("io.github.slidesense.checkForUpdates")
 }

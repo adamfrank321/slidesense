@@ -35,9 +35,9 @@ public final class SettingsWindowController {
         ///
         /// These are content heights only: the tab strip lives in the window's
         /// titlebar (52 pt), not in the content view. Measured at 540 pt wide
-        /// with the footnotes wrapped: edges 515, feel 387, extras 332,
-        /// general 546 (untrusted, the tallest state) — so 546 is the max.
-        static let height: CGFloat = 546
+        /// with the footnotes wrapped: edges 515, feel 387, media 332,
+        /// startup 344, general 426 — so 515 is the max.
+        static let height: CGFloat = 515
 
         static let autosaveName = "SlideSenseSettingsWindow"
     }
