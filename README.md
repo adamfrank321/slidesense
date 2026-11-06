@@ -137,7 +137,7 @@ Quit SlideSense ⌘Q
 The two readouts are live and non-interactive. Everything else lives in
 Settings, so the menu stays a glance, not a control panel.
 
-Seeking sends system fast-forward/rewind key holds. Support and speed depend on the active media player; players that ignore these keys will not seek. Returning to the starting position, lifting, or adding a second finger stops the hold. Reverse Swipe reverses both media bands. Quick Mute still uses a double-tap in the top-right corner.
+With VLC or SMPlayer in the foreground, seeking sends the player’s default seek shortcut immediately and then at most twice per second while held. VLC uses Command-Option-Arrow; SMPlayer uses Arrow. Top-edge skips use Command-Arrow in VLC and > / < in SMPlayer, and require a playlist with another item. Custom player key bindings must match these defaults. QuickTime seeking adjusts the front movie’s position in five-second steps and requires macOS Automation permission for QuickTime Player; allow the prompt, then retry the gesture. QuickTime has no playlist next/previous, so top-edge skips do nothing there. Keep the playback window focused, not a text field or preferences dialog. Other apps retain system media-key behavior, whose seeking support varies. The HUD indicates gesture detection, not confirmation from the player. Returning to the starting position, lifting, or adding a second finger stops the hold. Reverse Swipe reverses both media bands. Quick Mute still uses a double-tap in the top-right corner.
 
 ## Settings
 

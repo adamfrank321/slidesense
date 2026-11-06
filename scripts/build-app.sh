@@ -69,6 +69,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <string>public.app-category.utilities</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>SlideSense controls QuickTime playback position when you use the seek gesture.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSHumanReadableCopyright</key>
