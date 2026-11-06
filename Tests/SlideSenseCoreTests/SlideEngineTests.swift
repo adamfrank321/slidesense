@@ -121,19 +121,96 @@ final class SlideEngineTests: XCTestCase {
         XCTAssertTrue(recorder.commands.isEmpty)
     }
 
-    func testBottomStripSwipeSendsNext() {
+    func testTopStripSwipeSendsNext() {
         let (engine, recorder) = makeEngine()
-        engine.process(frame(at: 0.0, x: 0.8, y: 0.05))
-        engine.process(frame(at: 0.02, x: 0.6, y: 0.05))
-        engine.process(frame(at: 0.04, x: 0.4, y: 0.05))
+        engine.process(frame(at: 0.0, x: 0.8, y: 0.95))
+        engine.process(frame(at: 0.02, x: 0.6, y: 0.95))
+        engine.process(frame(at: 0.04, x: 0.4, y: 0.95))
         XCTAssertEqual(recorder.commands, [.next])
     }
 
-    func testBottomStripReverseFlipsDirection() {
+    func testTopStripReverseFlipsDirection() {
         let (engine, recorder) = makeEngine { $0.mediaStripReverse = true }
-        engine.process(frame(at: 0.0, x: 0.2, y: 0.05))
-        engine.process(frame(at: 0.04, x: 0.6, y: 0.05))
+        engine.process(frame(at: 0.0, x: 0.2, y: 0.95))
+        engine.process(frame(at: 0.04, x: 0.6, y: 0.95))
         XCTAssertEqual(recorder.commands, [.next])
+    }
+
+    func testBottomSeeksAndStopsOnRelease() {
+        let (engine, recorder) = makeEngine()
+        engine.process(frame(at: 0, x: 0.5, y: 0.05))
+        engine.process(frame(at: 0.02, x: 0.7, y: 0.05))
+        XCTAssertTrue(engine.isTrackingSlide)
+        engine.process(frame(at: 0.04, x: 0.7, y: 0.05, touching: false))
+        XCTAssertEqual(recorder.commands, [.seekForward, .endSeek])
+        XCTAssertFalse(engine.isTrackingSlide)
+    }
+
+    func testSeekCanReverseAndReturnToDeadZone() {
+        let (engine, recorder) = makeEngine()
+        engine.process(frame(at: 0, x: 0.5, y: 0.05))
+        engine.process(frame(at: 0.02, x: 0.7, y: 0.05))
+        engine.process(frame(at: 0.04, x: 0.3, y: 0.05))
+        engine.process(frame(at: 0.06, x: 0.5, y: 0.05))
+        XCTAssertEqual(recorder.commands, [.seekForward, .seekBackward, .endSeek])
+    }
+
+    func testSeekReversePreferenceAndReset() {
+        let (engine, recorder) = makeEngine { $0.mediaStripReverse = true }
+        engine.process(frame(at: 0, x: 0.5, y: 0.05))
+        engine.process(frame(at: 0.02, x: 0.7, y: 0.05))
+        engine.reset()
+        XCTAssertEqual(recorder.commands, [.seekBackward, .endSeek])
+    }
+
+    func testSeekStopsOnSecondFingerAndEmptyFrame() {
+        for secondFinger in [false, true] {
+            let (engine, recorder) = makeEngine()
+            engine.process(frame(at: 0, x: 0.5, y: 0.05))
+            engine.process(frame(at: 0.02, x: 0.3, y: 0.05))
+            let contacts = secondFinger ? [
+                TouchContact(id: 1, x: 0.3, y: 0.05, isTouching: true),
+                TouchContact(id: 2, x: 0.6, y: 0.5, isTouching: true)
+            ] : []
+            engine.process(TouchFrame(timestamp: 0.04, contacts: contacts))
+            XCTAssertEqual(recorder.commands, [.seekBackward, .endSeek])
+        }
+    }
+
+    func testDisabledMediaAndRequiredModifierBlockBothBands() {
+        for y in [0.05, 0.95] {
+            for needsModifier in [false, true] {
+                let (engine, recorder) = makeEngine {
+                    $0.mediaStripEnabled = needsModifier
+                    $0.requireModifier = needsModifier ? .option : .none
+                }
+                engine.process(frame(at: 0, x: 0.5, y: y))
+                engine.process(frame(at: 0.02, x: 0.7, y: y))
+                XCTAssertTrue(recorder.commands.isEmpty)
+            }
+        }
+    }
+
+    func testDoubleTapEitherMediaBandPlays() {
+        for y in [0.05, 0.95] {
+            let (engine, recorder) = makeEngine { $0.tapToPlayEnabled = true }
+            for base in [0.0, 0.2] {
+                engine.process(frame(at: base, x: 0.5, y: y))
+                engine.process(frame(at: base + 0.05, x: 0.5, y: y, touching: false))
+            }
+            XCTAssertEqual(recorder.commands, [.playPause])
+        }
+    }
+
+    func testHorizontalCornerSwipeSkipsButVerticalSlideAdjustsVolume() {
+        let (engine, recorder) = makeEngine()
+        engine.process(frame(at: 0, x: 0.95, y: 0.95))
+        engine.process(frame(at: 0.02, x: 0.7, y: 0.95))
+        XCTAssertEqual(recorder.commands, [.next])
+        engine.reset()
+        engine.process(frame(at: 1, x: 0.95, y: 0.95))
+        engine.process(frame(at: 1.02, x: 0.95, y: 0.7))
+        XCTAssertEqual(recorder.begins, [.volume])
     }
 
     func testDroppedContactKeepsSlideAlive() {

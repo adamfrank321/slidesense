@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Move next/previous track swipes to the top edge.
+- Add bottom-edge fast-forward/rewind holds with release, cancellation, and disconnect safeguards.
+- Update media settings, HUD symbols, and gesture documentation.
+
+
 All notable changes to SlideSense are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

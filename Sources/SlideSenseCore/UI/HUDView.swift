@@ -436,8 +436,10 @@ extension MediaSymbol {
     var hudSymbolName: String {
         switch self {
         case .playPause: return "playpause.fill"
-        case .next: return "forward.fill"
-        case .previous: return "backward.fill"
+        case .next: return "forward.end.fill"
+        case .previous: return "backward.end.fill"
+        case .seekForward: return "forward.fill"
+        case .seekBackward: return "backward.fill"
         }
     }
 }

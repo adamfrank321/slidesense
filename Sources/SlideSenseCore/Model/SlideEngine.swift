@@ -27,6 +27,9 @@ public enum MediaCommand: Sendable, Equatable {
     case next
     case previous
     case mute
+    case seekForward
+    case seekBackward
+    case endSeek
 }
 
 public protocol SlideEngineDelegate: AnyObject {
@@ -53,6 +56,7 @@ public final class SlideEngine {
     private enum Kind {
         case slider(target: EdgeAction, edge: Edge, startLevel: Double)
         case media
+        case seek
         case corner
         case ignored
     }
@@ -82,6 +86,7 @@ public final class SlideEngine {
     public var isTrackingSlide: Bool {
         guard let gesture else { return false }
         if case .slider = gesture.kind { return gesture.moved }
+        if case .seek = gesture.kind { return gesture.moved }
         return false
     }
 
@@ -93,12 +98,20 @@ public final class SlideEngine {
 
         if var current = gesture {
             if active.isEmpty {
+                // Never leave a seek key held after the finger lifts.
+                if case .seek = current.kind {
+                    finish(current, at: frame.timestamp, config: config)
+                    gesture = nil
+                    return
+                }
                 current.lostFrames += 1
                 // A tap ends the moment the finger lifts; a slide survives a
                 // few dropped frames so it does not stop halfway (1.8 fix).
                 if !current.moved || current.lostFrames > 5 || frame.timestamp - current.lastSeen > 0.12 {
                     finish(current, at: frame.timestamp, config: config)
                     gesture = nil
+                } else {
+                    gesture = current
                 }
                 return
             }
@@ -151,12 +164,12 @@ public final class SlideEngine {
         }
 
         switch edge {
-        case .bottom:
+        case .bottom, .top:
             guard config.mediaStripEnabled else {
                 gesture = makeGesture(kind: .ignored, point: point, now: now, level: 0, fine: fine, config: config)
                 return
             }
-            gesture = makeGesture(kind: .media, point: point, now: now, level: 0, fine: fine, config: config)
+            gesture = makeGesture(kind: edge == .bottom ? .seek : .media, point: point, now: now, level: 0, fine: fine, config: config)
         case .left, .right:
             let target = edge == .left ? config.leftEdge : config.rightEdge
             let level = target == .volume ? config.currentVolume : config.currentBrightness
@@ -174,6 +187,11 @@ public final class SlideEngine {
     private func update(_ gesture: inout Gesture, point: CGPoint, now: TimeInterval, config: EngineConfiguration) {
         let dx = point.x - gesture.startX
         let dy = point.y - gesture.startY
+
+        // Horizontal motion in the shared corner belongs to the top strip.
+        if case .corner = gesture.kind, abs(dx) > 0.02, abs(dx) > abs(dy), config.mediaStripEnabled {
+            gesture.kind = .media
+        }
 
         // Touching down inside the Quick Mute corner and then sliding is a
         // volume/brightness slide, not a failed tap.
@@ -215,6 +233,25 @@ public final class SlideEngine {
                 delegate?.slideEngine(self, didTick: target, level: snapped)
             }
 
+        case .seek:
+            guard config.mediaStripEnabled else {
+                cancel(gesture)
+                gesture.kind = .ignored
+                return
+            }
+            // Right seeks forward, left seeks backward. Returning to the
+            // touchdown dead zone stops seeking without lifting the finger.
+            guard abs(dx) > 0.02 else {
+                if gesture.moved { delegate?.slideEngine(self, didRecognize: .endSeek) }
+                return
+            }
+            gesture.moved = true
+            var forward = dx > 0
+            if config.mediaStripReverse { forward.toggle() }
+            // Renew the hold each frame so the controller can time it out if
+            // the device disconnects without delivering a release frame.
+            delegate?.slideEngine(self, didRecognize: forward ? .seekForward : .seekBackward)
+
         case .media:
             guard config.mediaStripEnabled else { return }
             if abs(dx) > 0.02 { gesture.moved = true }
@@ -241,8 +278,11 @@ public final class SlideEngine {
                 delegate?.slideEngine(self, didEndSlide: target, level: gesture.emittedLevel)
             }
 
-        case .media:
-            if isTap, config.tapToPlayEnabled {
+        case .media, .seek:
+            if case .seek = gesture.kind, gesture.moved {
+                delegate?.slideEngine(self, didRecognize: .endSeek)
+            }
+            if isTap, config.mediaStripEnabled, config.tapToPlayEnabled {
                 if now - lastMediaTap < 0.45 {
                     lastMediaTap = -10
                     delegate?.slideEngine(self, didRecognize: .playPause)
@@ -267,6 +307,9 @@ public final class SlideEngine {
     }
 
     private func cancel(_ gesture: Gesture) {
+        if case .seek = gesture.kind, gesture.moved {
+            delegate?.slideEngine(self, didRecognize: .endSeek)
+        }
         if case let .slider(target, _, _) = gesture.kind, gesture.moved {
             delegate?.slideEngine(self, didEndSlide: target, level: gesture.emittedLevel)
         }

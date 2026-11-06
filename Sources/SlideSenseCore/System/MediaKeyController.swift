@@ -15,6 +15,9 @@ public final class MediaKeyController {
         case brightnessUp
         case brightnessDown
         case mute
+        case seekForward
+        case seekBackward
+        case endSeek
     }
 
     // NX_KEYTYPE_* values from IOKit/hidsystem/ev_keymap.h.
@@ -27,7 +30,12 @@ public final class MediaKeyController {
         case play = 16
         case next = 17
         case previous = 18
+        case fast = 19
+        case rewind = 20
     }
+
+    private var heldSeekKey: Key?
+    private var seekRelease: DispatchWorkItem?
 
     private init() {}
 
@@ -41,7 +49,30 @@ public final class MediaKeyController {
         case .brightnessUp: press(.brightnessUp)
         case .brightnessDown: press(.brightnessDown)
         case .mute: press(.mute)
+        case .seekForward: holdSeek(.fast)
+        case .seekBackward: holdSeek(.rewind)
+        case .endSeek: endSeek()
         }
+    }
+
+    /// Call on the main queue. A missing release frame cannot leave a key down.
+    private func holdSeek(_ key: Key) {
+        if heldSeekKey != key {
+            endSeek()
+            heldSeekKey = key
+            post(key: key, down: true)
+        }
+        seekRelease?.cancel()
+        let release = DispatchWorkItem { [weak self] in self?.endSeek() }
+        seekRelease = release
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: release)
+    }
+
+    public func endSeek() {
+        seekRelease?.cancel()
+        seekRelease = nil
+        if let key = heldSeekKey { post(key: key, down: false) }
+        heldSeekKey = nil
     }
 
     private func press(_ key: Key) {

@@ -121,6 +121,7 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
         statusItem?.willOpen = nil
         monitor.stop()
         engine.reset()
+        MediaKeyController.shared.endSeek()
         freezer.end()
         observers.forEach(NotificationCenter.default.removeObserver)
         observers.removeAll()
@@ -201,6 +202,8 @@ public final class AppCoordinator: NSObject, StatusItemDataSource {
     }
 
     private func settingsDidChange() {
+        engine.reset()
+        MediaKeyController.shared.endSeek()
         refreshSnapshot()
 
         let settings = store.settings
@@ -426,6 +429,16 @@ extension AppCoordinator: SlideEngineDelegate {
             case .previous:
                 MediaKeyController.shared.send(.previous)
                 self.hud.showMedia(.previous)
+            case .seekForward:
+                guard self.store.settings.enabled, self.store.settings.mediaStripEnabled else { return }
+                MediaKeyController.shared.send(.seekForward)
+                self.hud.showMedia(.seekForward)
+            case .seekBackward:
+                guard self.store.settings.enabled, self.store.settings.mediaStripEnabled else { return }
+                MediaKeyController.shared.send(.seekBackward)
+                self.hud.showMedia(.seekBackward)
+            case .endSeek:
+                MediaKeyController.shared.endSeek()
             case .mute:
                 self.audio.toggleMute()
                 if self.hapticsEnabled {

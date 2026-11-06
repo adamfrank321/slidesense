@@ -5,6 +5,8 @@ public enum MediaSymbol: CaseIterable, Sendable {
     case playPause
     case next
     case previous
+    case seekForward
+    case seekBackward
 }
 
 /// Borderless, non-activating panel that hosts the HUD. It can never become key

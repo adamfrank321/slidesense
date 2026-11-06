@@ -8,6 +8,7 @@ final class EdgeGeometryTests: XCTestCase {
         XCTAssertEqual(geometry.edge(at: CGPoint(x: 0.05, y: 0.5)), .left)
         XCTAssertEqual(geometry.edge(at: CGPoint(x: 0.95, y: 0.5)), .right)
         XCTAssertEqual(geometry.edge(at: CGPoint(x: 0.5, y: 0.05)), .bottom)
+        XCTAssertEqual(geometry.edge(at: CGPoint(x: 0.5, y: 0.95)), .top)
         XCTAssertNil(geometry.edge(at: CGPoint(x: 0.5, y: 0.5)))
     }
 
@@ -15,6 +16,7 @@ final class EdgeGeometryTests: XCTestCase {
         let geometry = EdgeGeometry(edgeWidth: 0.2)
         // Bottom-left corner: closer to the bottom (y = 0.02) than the left (x = 0.15).
         XCTAssertEqual(geometry.edge(at: CGPoint(x: 0.15, y: 0.02)), .bottom)
+        XCTAssertEqual(geometry.edge(at: CGPoint(x: 0.15, y: 0.98)), .top)
         // Bottom-right corner: closer to the right.
         XCTAssertEqual(geometry.edge(at: CGPoint(x: 0.99, y: 0.02)), .right)
     }
@@ -23,6 +25,7 @@ final class EdgeGeometryTests: XCTestCase {
         let geometry = EdgeGeometry(edgeWidth: 0.2, bottomQuarterOnly: true)
         XCTAssertEqual(geometry.edge(at: CGPoint(x: 0.05, y: 0.1)), .left)
         XCTAssertNil(geometry.edge(at: CGPoint(x: 0.05, y: 0.7)))
+        XCTAssertEqual(geometry.edge(at: CGPoint(x: 0.5, y: 0.95)), .top)
     }
 
     func testQuickMuteCorner() {

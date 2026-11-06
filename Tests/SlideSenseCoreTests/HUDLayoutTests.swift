@@ -196,6 +196,8 @@ final class HUDLayoutTests: XCTestCase {
                 case .playPause: return "media-playpause"
                 case .next: return "media-next"
                 case .previous: return "media-previous"
+                case .seekForward: return "media-seek-forward"
+                case .seekBackward: return "media-seek-backward"
                 }
             }
         }
@@ -210,7 +212,9 @@ final class HUDLayoutTests: XCTestCase {
         .level(.brightness, 0.86, false),
         .media(.playPause),
         .media(.next),
-        .media(.previous)
+        .media(.previous),
+        .media(.seekForward),
+        .media(.seekBackward)
     ]
 
     func testSnapshotRendersEveryState() throws {

@@ -1,17 +1,19 @@
 import CoreGraphics
 
-/// The three usable edges of the trackpad, in normalised coordinates where
+/// The four usable edges of the trackpad, in normalised coordinates where
 /// `x` goes left → right and `y` goes bottom → top (see `TrackpadMonitor`).
 public enum Edge: String, Codable, CaseIterable, Sendable {
     case left
     case right
     case bottom
+    case top
 
     public var label: String {
         switch self {
         case .left: return "Left edge"
         case .right: return "Right edge"
         case .bottom: return "Bottom edge"
+        case .top: return "Top edge"
         }
     }
 }
@@ -48,10 +50,11 @@ public struct EdgeGeometry: Sendable {
         if x <= edgeWidth { candidates.append((.left, x)) }
         if x >= 1 - edgeWidth { candidates.append((.right, 1 - x)) }
         if y <= edgeWidth { candidates.append((.bottom, y)) }
+        if y >= 1 - edgeWidth { candidates.append((.top, 1 - y)) }
 
         guard let best = candidates.min(by: { $0.distance < $1.distance }) else { return nil }
 
-        if bottomQuarterOnly, best.edge != .bottom, y > 0.25 {
+        if bottomQuarterOnly, (best.edge == .left || best.edge == .right), y > 0.25 {
             return nil
         }
         return best.edge
@@ -67,7 +70,7 @@ public struct EdgeGeometry: Sendable {
     /// The span of trackpad travel that maps onto a full 0…1 change.
     public func travelSpan(for edge: Edge) -> Double {
         switch edge {
-        case .bottom:
+        case .bottom, .top:
             return 0.75 * max(edgeWidth, 0.08)
         case .left, .right:
             let usable = bottomQuarterOnly ? 0.25 : 1.0

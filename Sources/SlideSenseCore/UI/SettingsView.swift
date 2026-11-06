@@ -232,7 +232,7 @@ struct SettingsTabContent: View {
             } header: {
                 Text("Media Strip")
             } footer: {
-                Text("Swipe along the bottom edge to skip tracks; double-tap to play or pause.")
+                Text("Bottom: slide right/left and hold to seek; lift to stop. Top: swipe left/right for next/previous. Double-tap either to play/pause. Seeking requires player support.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -309,7 +309,7 @@ struct SettingsTabContent: View {
             } header: {
                 Text("Permissions")
             } footer: {
-                Text("Accessibility access lets SlideSense send the media keys used by the bottom-edge media strip. Volume and brightness work without it.")
+                Text("Accessibility access lets SlideSense send the media keys used by the top and bottom media strips. Volume and brightness work without it.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

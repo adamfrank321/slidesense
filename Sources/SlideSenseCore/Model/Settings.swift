@@ -156,7 +156,7 @@ public struct Settings: Codable, Equatable, Sendable {
         switch edge {
         case .left: return leftEdge
         case .right: return rightEdge
-        case .bottom: return nil
+        case .bottom, .top: return nil
         }
     }
 

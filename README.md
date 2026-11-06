@@ -6,7 +6,7 @@
 
 SlideSense is a free, MIT-licensed menu bar app for macOS 13+. The left and right
 edges of the trackpad become a brightness and volume slider, with haptics, a
-matching on-screen display, quick mute, and a media strip along the bottom edge.
+matching on-screen display, quick mute, and media controls along the top and bottom edges.
 
 ```
         ┌───────────────────────────────┐
@@ -30,7 +30,7 @@ matching on-screen display, quick mute, and a media strip along the bottom edge.
 | **Require a modifier** | Demand FN, Option or Control before an edge responds. |
 | **Cursor freeze** | The pointer stays put and hidden while you slide. |
 | **Quick Mute** | Double-tap the top-right corner. |
-| **Media strip** | Swipe along the bottom edge to skip; double-tap to play/pause. |
+| **Media strip** | Bottom edge seeks; top edge skips tracks; double-tap either to play/pause. |
 | **Swap sides** | Brightness on the right if you prefer. |
 | **Menu bar only** | No Dock icon. Idle CPU is effectively zero. |
 | **Open at login** | Via `SMAppService`, no helper daemon. |
@@ -107,8 +107,9 @@ sliders still work; the media strip and any key-event fallback do not.
 | Slide up/down on the right band | Volume |
 | Hold ⇧⌥ while sliding | Quarter steps |
 | Double-tap the top-right corner | Mute / unmute |
-| Swipe left/right on the bottom band | Next / previous track |
-| Double-tap the bottom band | Play / pause (off by default) |
+| Slide right/left and hold on the bottom band | Fast-forward / rewind; lift to stop |
+| Swipe left/right on the top band | Next / previous track |
+| Double-tap either media band | Play / pause (off by default) |
 
 A slide always starts from the current system level, so you can nudge from
 wherever you are. Because the level is absolute, dragging back down gives the
@@ -135,6 +136,8 @@ Quit SlideSense ⌘Q
 
 The two readouts are live and non-interactive. Everything else lives in
 Settings, so the menu stays a glance, not a control panel.
+
+Seeking sends system fast-forward/rewind key holds. Support and speed depend on the active media player; players that ignore these keys will not seek. Returning to the starting position, lifting, or adding a second finger stops the hold. Reverse Swipe reverses both media bands. Quick Mute still uses a double-tap in the top-right corner.
 
 ## Settings
 
@@ -229,7 +232,7 @@ state) and `swift run SlideSense --diagnose` prints the state of every subsystem
 | Media keys do nothing | Grant Accessibility access in Settings → General. |
 | Permission prompt keeps coming back | Every rebuild replaces the binary; re-approve the new copy in System Settings. |
 | Slides stop halfway | Update — 0.1.0 tolerates a dropped contact for ~120 ms. |
-| Two-finger gestures feel different | They are untouched by design; if something still feels off, disable **Media strip**, which owns the bottom band. |
+| Two-finger gestures feel different | They are untouched by design; if something still feels off, disable **Media strip**, which owns the top and bottom bands. |
 | Trackpad stops after sleep | SlideSense restarts the device 1.5 s after wake; if it persists, toggle the app off/on from the menu. |
 
 ## Privacy
