@@ -43,14 +43,16 @@ final class SettingsWindowTests: XCTestCase {
 
     // MARK: - Window chrome
 
-    func testWindowUsesDocumentedSizeAndChrome() {
+    func testWindowUsesMinimumSizeAndChrome() {
         let fixture = makeFixture()
         let controller = SettingsWindowController(store: fixture.store)
         let window = controller.prepareWindow()
 
         XCTAssertEqual(window.title, "SlideSense Settings")
         XCTAssertEqual(window.contentLayoutRect.size.width, SettingsWindowController.contentSize.width)
-        XCTAssertEqual(window.contentLayoutRect.size.height, SettingsWindowController.contentSize.height)
+        // contentSize is the minimum; the controller grows the window to fit
+        // the tallest tab. testEveryTabFitsWithoutClipping checks that content.
+        XCTAssertGreaterThanOrEqual(window.contentLayoutRect.size.height, SettingsWindowController.contentSize.height)
 
         XCTAssertTrue(window.styleMask.contains(.titled))
         XCTAssertTrue(window.styleMask.contains(.closable))
